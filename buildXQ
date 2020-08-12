@@ -1,0 +1,87 @@
+ A quick guide to building XQEMU
+Now, this emulator is not easy to build, especially if you don't know what you're doing!  When I first started getting my hands dirty with this one, I had a rather tough time getting it to build due to dependency hell, missing tools, and missing source files.  Now that I have another Mac with better specs in general, I wanted to go about setting it up on this machine.  This time, it's going much smoother, but I think having a more detailed guide on how to set it up would be helpful.
+
+A word of warning: so far, XQEMU appears to work best on MacOSX, which is the OS I will be using for this guide.  JayFoxRox successfully got this built on Linux before (I haven't tried this with espes' branch); but his branch has some files exclusive to him for legal purposes.  Windows?  I hear it's tough, but doable.  If you have any expectations of playing JSRF or Conker right out of the box, chances are you'll be disappointed (but don't let that stop you from trying).  Also, if you don't know how to use a Terminal, git, or even a command-line compiler, chances are you shouldn't be attempting this or even using this wip emulator to begin with.
+
+Now, let's get started.  First things first, always take a look at the wiki: https://github.com/espes/xqemu/wiki/Getting-Started
+
+Well, that Wiki hasn't been updated in almost 2 years though... O_o
+
+If you haven't already, create a folder, navigate to that folder using the terminal, then do a 'git clone' to get the source code from the git.  Once you do that, you need to check two folders within the source folder, and those are:
+
+- dtc
+- pixman
+
+If those folders are empty, then you need to clone those sources independently.  You can do so with the following commands while in the source directory:
+
+git clone git://git.qemu-project.org/dtc
+git clone git://anongit.freedesktop.org/pixman
+
+So, if you were missing those before, you should have them now!  And now that you have all the source files needed to build XQEMU, and if you want, go ahead and enter this terminal command:
+
+./configure --cc=clang --enable-opengl --disable-vnc --disable-user --disable-kvm --disable-xen --with-coroutine=sigaltstack --target-list=xbox-softmmu --enable-debug
+
+Now, if you got the same problem I had, you will likely run into an error message like this one:
+
+ERROR: pkg-config binary 'pkg-config' not found
+
+There's multiple ways to fix this.  You can either use macports or homebrew.  I chose macports personally.  So I downloaded MacPorts for my OS of choice, and went from there.  To install pkgconfig using MacPorts, use the following command:
+
+sudo port install pkgconfig
+
+There's a possibility you got this error message here:
+
+sudo: port: command not found
+
+If you did, then you need to setup your path correctly.  Try using this command, it worked for me:
+
+export PATH=$PATH:/opt/local/bin
+
+Now, try the previous command again, and it should work.  Okay, now we have that annoyance out the way.  Optionally, you can also install the XCode command line tools if you want or haven't done so already.  To do so, type this:
+
+`xcode-select --install'
+
+It will take a minute or two, and will have a nice GUI pop up instead of terminal text.  At this point, go ahead and try configuring XQEMU again.  If you get this following error pertaining to glib:
+
+ERROR: glib-2.12 required to compile QEMU
+
+That means we need to install that too.  Once again, let's use MacPorts to get this out of the way, like so:
+
+sudo port install glib2
+
+Okay, that'll do it.  Try configuring XQEMU one more time, and it should do so successfully.  If not, then there's some other dependency you are missing.  On Yosemite, I haven't gotten any more errors pertaining to such missing dependencies like Cairo, pixman, etc.  If you do get those in particular (I did), make sure you have the pixman source in the appropriate folder as I mentioned towards the beginning of this article.  If it's something else, feel free to ask me, but I can't promise you a direct answer/solution, especially if you aren't trying this on MacOSX Yosemite.
+
+The next thing you want to do is type make, and xqemu should start compiling.  While compiling, I got an error regarding autoreconf that looked like this:
+
+/bin/sh: autoreconf: command not found
+
+If you get that, let's fire up MacPorts again, like so:
+
+sudo port install automake autoconf libtool
+
+Bam, fixed.  Try compiling it again.  After this, I got a linker error pertaining to pixman, telling me that _prng_state is missing, and other stuff.  Click this link (http://lists.freedesktop.org/archives/pixman/2014-November/003461.html), and it will tell you how to edit the appropriate makefile in the pixman source folder in order to get passed this annoyance.
+
+Okay, if you followed the instructions, then you should have a working build now.  If you are getting a linker error regarding SSE4.2, like the one below:
+
+error in backend: Cannot select: intrinsic %llvm.x86.sse42.crc32.64.64
+
+Then you'll have to comment out the code in nv2a.c that uses it. Search for the following function:
+
+static uint64_t fast_hash(const uint8_t *data, size_t len, unsigned int samples)
+
+Then uncomment the macros, and change the top macro from '#ifdef __SSE42__' to '#if 0'.  Type make again, and that should fix it.  Place the appropriate BIOS files in the right places and you're good to go (of course I'm not going to tell you where to download them here!), now fire up the emu from the terminal and see what you can come up with!
+
+These are all the issues I encountered when building XQEMU the 2nd time around.  If you have different issues, feel free to ask questions below, but remember that I'm NOT going to hold your hand and cater to you personally.  These are things that I figured out for myself simply by googling until I found a solution, all in a few hours.  No offense, but if you can't figure some things out for yourself, then you shouldn't bother.
+
+References:
+- https://github.com/espes/xqemu/wiki/Getting-Started
+- http://www.fantageek.com/318/install-pkg-config-for-mac-osx/
+- http://mikelev.in/2012/10/qemu-mac-os-x-success/
+- http://stackoverflow.com/questions/9575989/install-autoreconf-on-osx-lion
+- http://lists.freedesktop.org/archives/pixman/2014-November/003461.html
+
+Have at it,
+
+Shogun.
+Posted by blueshogun96 at 2:10 PM
+Labels: emulator, git, MacOSX, qemu, terminal, XQEMU 
