@@ -1,0 +1,187 @@
+
+QEMU 3D
+By lofyer | 2016年12月29日
+0 Comment
+内容 隐藏
+1 Get XQEMU
+2 Compile XQEMU
+2.1 For Mac OS X
+2.2 For Windows
+2.3 For Linux
+2.3.1 Requirements:
+2.3.2 Building:
+3 Run XQEMU
+3.1 Xbox MCP-X boot rom
+3.2 Xbox 1.0 compatible bios (cromwell, 3944, 4034, 4036, …)
+3.2.1 Debug BIOS
+3.2.2 Retail BIOS
+3.3 Xbox dashboard files on a hard disk image
+
+Except from virgl(virtio-vga), KVMGT/XenGT, CUDA vGPU, I will introduce you another way of using 3D app in QEMU, c’est la XQEMU
+
+Download prebuilt EmuCR-XQEMU-20170109
+
+Download games!
+
+As you can see, this is a emulator forked from QEMU to let you playing XBOX games in PC.(not interested though…)
+Get XQEMU
+
+git clone https://github.com/espes/xqemu.git
+1
+	
+
+git clone https://github.com/espes/xqemu.git
+
+Compile XQEMU
+For Mac OS X
+
+./configure --cc=clang --enable-opengl --disable-vnc --disable-user --target-list=xbox-softmmu --extra-cflags="-march=native" --enable-debug
+make
+1
+2
+	
+
+
+./configure --cc=clang --enable-opengl --disable-vnc --disable-user --target-list=xbox-softmmu --extra-cflags="-march=native" --enable-debug
+
+make
+
+For Windows
+
+    Install MSYS2 x86_64: Follow all the steps on http://msys2.github.io/
+    Open the “MinGW-w64 Win64 Shell” and run:
+    pacman -S git python2 make autoconf automake-wrapper mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-glib2 mingw-w64-x86_64-glew mingw-w64-x86_64-SDL
+    git clone https://github.com/espes/xqemu
+    cd xqemu
+    git submodule update --init pixman
+
+    ./configure --cc=gcc --python=python2 --enable-opengl --disable-vnc --disable-user --target-list=xbox-softmmu --extra-cflags="-march=native" --enable-debug
+    make
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    	
+
+
+    pacman -S git python2 make autoconf automake-wrapper mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-glib2 mingw-w64-x86_64-glew mingw-w64-x86_64-SDL
+
+
+    git clone https://github.com/espes/xqemu
+
+
+    cd xqemu
+
+
+    git submodule update --init pixman
+
+     
+
+
+    ./configure --cc=gcc --python=python2 --enable-opengl --disable-vnc --disable-user --target-list=xbox-softmmu --extra-cflags="-march=native" --enable-debug
+
+    make
+
+There’s a bug with timers on Windows that makes it run much slower than it should. YOU should fix it for me.
+For Linux
+Requirements:
+
+    Everything QEMU requires
+    OpenGL with GLX and GLEW
+
+For Debian most build dependencies can be installed by running:
+apt-get build-dep qemu
+apt-get install libglew-dev libtxc-dxtn-s2tc0
+1
+2
+	
+
+
+apt-get build-dep qemu
+
+
+apt-get install libglew-dev libtxc-dxtn-s2tc0
+
+Building:
+
+./configure --python=python2 --enable-opengl --disable-vnc --disable-user --enable-kvm --disable-xen --audio-drv-list=alsa --target-list=xbox-softmmu --extra-cflags="-march=native" --disable-werror --enable-debug 
+make
+1
+2
+	
+
+
+./configure --python=python2 --enable-opengl --disable-vnc --disable-user --enable-kvm --disable-xen --audio-drv-list=alsa --target-list=xbox-softmmu --extra-cflags="-march=native" --disable-werror --enable-debug 
+
+make
+
+Run XQEMU
+
+XQEMU is a Low-Level Emulator, so you need to find a copy of the stuff the Xbox runs when it turns on:
+Xbox MCP-X boot rom
+
+MD5 (mcpx_1.0.bin) = d49c52a4102f6df7bcf8d0617ac475ed
+1
+	
+
+MD5 (mcpx_1.0.bin) = d49c52a4102f6df7bcf8d0617ac475ed
+
+If your mcpx dump has an MD5 of 196a5f59a13382c185636e691d6c323d you dumped it badly and it’s a couple bytes off. It should start with 0x33 0xC0 and end with 0x02 0xEE.
+Xbox 1.0 compatible bios (cromwell, 3944, 4034, 4036, …)
+
+You can use a retail bios or a modified ‘debug’ bios. Just like a real xbox, running a retail bios will not boot unofficial software.
+Debug BIOS
+
+People have reported success with the ‘COMPLEX 4627’ modified debug bios. It’s convenient to note that this bios does not necessarily require a populated hard disk image to load an application from DVD (though an empty drive still needs to be attached), so you can skip the next step in some cases.
+v1.0.2 1M dump: MD5 (Complex_4627Debug.bin) = 19b5c6d3d42a707bba620634fe6d4baf
+1
+	
+
+v1.0.2 1M dump: MD5 (Complex_4627Debug.bin) = 19b5c6d3d42a707bba620634fe6d4baf
+
+or sometimes
+1MB dump: MD5 (complex_4627debug.bin) = e8dd61cc6abdbd06aac185e371312dc1
+1
+	
+
+1MB dump: MD5 (complex_4627debug.bin) = e8dd61cc6abdbd06aac185e371312dc1
+
+Retail BIOS
+
+1M dump: MD5 (3944.bin) = e8b39b98cf775496c1c76e4f7756e6ed
+1
+	
+
+1M dump: MD5 (3944.bin) = e8b39b98cf775496c1c76e4f7756e6ed
+
+or sometimes
+256k dump: MD5 (3944.bin) = 542c62cb976a4993c8c5027dff9638ce
+1
+	
+
+256k dump: MD5 (3944.bin) = 542c62cb976a4993c8c5027dff9638ce
+
+Xbox dashboard files on a hard disk image
+
+Create an Xbox hard-disk image, using xboxhdm or otherwise:
+
+    Create an xboxhdm cd-rom with the dashboard files
+    Create a blank hard-disk file: qemu-img create -f qcow2 xbox_harddisk.qcow2 8G
+    Run xboxhdm with qemu or something: i386-softmmu/qemu-system-i386 -hda xbox_harddisk.qcow2 -cdrom linux.iso
+
+Launch XQEMU with something like…
+xbox-softmmu/qemu-system-xbox -cpu pentium3 -machine xbox,bootrom=mcpx_rom.bin -m 64 -drive file=xbox_harddisk.qcow2,index=0,media=disk,locked=on -drive index=1,media=cdrom -bios xbox_bios.bin -usb -device usb-hub,bus=usb-bus.0,port=3 -device usb-xbox-gamepad,bus=usb-bus.0,port=3.2
+1
+	
+
+xbox-softmmu/qemu-system-xbox -cpu pentium3 -machine xbox,bootrom=mcpx_rom.bin -m 64 -drive file=xbox_harddisk.qcow2,index=0,media=disk,locked=on -drive index=1,media=cdrom -bios xbox_bios.bin -usb -device usb-hub,bus=usb-bus.0,port=3 -device usb-xbox-gamepad,bus=usb-bus.0,port=3.2
+
+On Linux, you can use KVM by passing accel=kvm,kernel_irqchip=off to -machine. This is not yet recommended.
+
+To skip the Xbox logo animation you can pass short_animation to the -machine option (Example: -machine xbox,short_animation,bootrom=mcpx_rom.bin).
+
+To run a game from a Xbox DVD image you must specify a file for the DVD device
+Category: Cloud
