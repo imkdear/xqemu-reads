@@ -1,0 +1,55 @@
+0ldskoo1
+
+By the time I got to work on this problem, the CTF admins had posted a hint to point people towards an Xbox emulator, xqemu. I followed the Getting Started guide, compiled xqemu, and acquired all the necessary Xbox boot rom and bios images.
+
+MD5 (mcpx_rom.bin)  = d49c52a4102f6df7bcf8d0617ac475ed
+MD5 (xbox_bios.bin) = e8dd61cc6abdbd06aac185e371312dc1
+
+Getting the emulator up and running required setting up a hard disk. Apparently it works fine with a blank disk.
+
+qemu-img create -f qcow2 xbox_harddisk.qcow2 8G
+
+Next up! Copying the massive startup command from the guide and just crossing our fingers.
+
+$ ~/git/xqemu/xbox-softmmu/qemu-system-xbox -cpu pentium3 \
+    -machine xbox,short_animation,bootrom=mcpx_rom.bin -m 64 \
+    -drive file=xbox_harddisk.qcow2,index=0,media=disk,locked=on \
+    -drive index=1,media=cdrom,file=0ldskoo1.iso -bios xbox_bios.bin \
+    -usb -device usb-hub,bus=usb-bus.0,port=3 \
+    -device usb-xbox-gamepad,bus=usb-bus.0,port=3.2
+
+Ta-da!
+
+The Xbox game launches, displays what looks like the start of the flag (9447{n) and then renders an enormous red box. 😟
+
+Well, we're running the game in qemu, which supports debugging with gdb... why don't we attach, pull up IDA, and start looking for big red boxes!
+
+We can set up qemu for gdb remote debugging by adding -s -S to the end of our monster command. At this point, it would be nice to have a copy of the actual binary instead of this weird iso image. We'll use binwalk to find the offset and carve out our Xbox executable.
+
+$ binwalk 0ldskoo1.iso 
+DECIMAL     HEXADECIMAL   DESCRIPTION
+----------------------------------------------------------------------------
+542720      0x84800       XBE, Microsoft Xbox executable, not signed, all regions
+
+We throw this into IDA and start reverse engineering. The main game plan is to find the region of code that activates the big red box. Ultimately, this was as simple as searching for the constant 0FF0000h (pure red in RGB). This constant crops up in a single subroutine. If we set a breakpoint in this location, it only triggers when the red box is rendering. BINGO! We've found our red box.
+
+IDA disassembly
+
+From here, we just need to NOP out the red box code. We don't really want to change much though, to make it easier to put our patched binary back in the disk image. To simplify things, we can just make the following change:
+
+--- a/0ldschoo1.asm
++++ b/0ldschoo1-patch.asm
+
+  .text:000DC6B6                 movss   xmm0, ds:dword_CB128
+  .text:000DC6BE                 ucomiss xmm0, dword_C4CC8
+- .text:000DC6C5                 jbe     loc_DC71C
++ .text:000DC6C5                 jno     loc_DC71C
+  .text:000DC6CB                 xor     eax, eax
+  .text:000DC6CD                 mov     ecx, 7Dh
+  .text:000DC6D2                 mov     edx, 280h
+  .text:000DC6D7                 mov     esi, 96h
+  .text:000DC6DC                 mov     edi, 0FF0000h
+
+This modifies the jump so that it only triggers on an overflow condition code. Unconventional, but effective. This equates to a single byte change of our disk image and we're done with the challenge!
+
+Winning
